@@ -2,6 +2,8 @@ import 'phaser';
 
 export default class Demo extends Phaser.Scene
 {
+    origDragPoint = null;
+
     constructor ()
     {
         super('demo');
@@ -11,18 +13,30 @@ export default class Demo extends Phaser.Scene
     {
         this.load.setPath('assets');
 
+        // Load our character model
         this.load.spritesheet([
             { key: 'android', frameConfig: { frameWidth: 32, frameHeight: 48 } },
             { key: 'injured-character', frameConfig: { frameWidth: 48, frameHeight: 32 } }
         ]);
 
-        this.load.glsl('stars', 'starfields.glsl.js');
+        // Load our tiles
+        this.load.image("tiles", "tileset.png");
+        this.load.tilemapTiledJSON("map", "map.json");
+
     }
 
     create ()
     {
-        this.add.shader('RGB Shift Field', 0, 0, 800, 600).setOrigin(0);
 
+        // Create tilemap
+        const map = this.make.tilemap({key: "map"});
+        const tileset = map.addTilesetImage("SpaceTiles", "tiles");
+
+        const backgroundLayer = map.createStaticLayer("Background", tileset, 0, 0);
+        const foregroundLayer = map.createStaticLayer("Foreground", tileset, 0, 0);
+
+
+        // Create animations for our character
         var frontWalkConfig = {
             key: 'walkFront',
             frames: this.anims.generateFrameNumbers('android', { start: 0, end: 3 }),
@@ -59,12 +73,30 @@ export default class Demo extends Phaser.Scene
     
         this.add.sprite(400, 300, 'android').play('walkBack');
 
+
+    }
+
+    update()
+    {
+        // Support camera dragging
+        if (this.input.activePointer.isDown) {
+            if (this.origDragPoint) {
+              // move the camera by the amount the mouse has moved since last update
+              this.cameras.main.scrollX +=
+                this.origDragPoint.x - this.game.input.activePointer.position.x;
+              this.cameras.main.scrollY +=
+                this.origDragPoint.y - this.game.input.activePointer.position.y;
+            } // set new drag origin to current position
+            this.origDragPoint = this.game.input.activePointer.position.clone();
+          } else {
+            this.origDragPoint = null;
+          }
     }
 }
 
 const config = {
     type: Phaser.AUTO,
-    backgroundColor: '#125555',
+    backgroundColor: '#111217',
     width: 800,
     height: 600,
     scene: Demo
