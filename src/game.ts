@@ -49,12 +49,24 @@ export default class Demo extends Phaser.Scene
         var scene = this,
         menu = undefined;
 
+        
+        // Create tilemap
+        const map = this.make.tilemap({key: "map"});
+        const tileset = map.addTilesetImage("SpaceTiles", "tiles");
+
+        const backgroundLayer = map.createStaticLayer("Background", tileset, 0, 0);
+        const foregroundLayer = map.createDynamicLayer("Foreground", tileset, 0, 0);
+
+
+        // Handle clicks for the menu
         this.print = this.add.text(0, 0, '').setScrollFactor(0);
         this.input.on('pointerdown', function (pointer) {
 
             var worldXY = scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
             console.log('World poisition at Main: ' + pointer.worldX + ',' + pointer.worldY);
             console.log('World poisition at Sub: ' + worldXY.x + ',' + worldXY.y);
+
+            foregroundLayer.getTileAtWorldXY(worldXY.x, worldXY.y)?.setAlpha(0);
 
             if (menu === undefined) {
                 menu = createMenu(scene, worldXY.x, worldXY.y, items, function (button) {
@@ -67,14 +79,6 @@ export default class Demo extends Phaser.Scene
                 scene.print.text = '';
             }
         }, this);
-
-        // Create tilemap
-        const map = this.make.tilemap({key: "map"});
-        const tileset = map.addTilesetImage("SpaceTiles", "tiles");
-
-        const backgroundLayer = map.createStaticLayer("Background", tileset, 0, 0);
-        const foregroundLayer = map.createStaticLayer("Foreground", tileset, 0, 0);
-
 
         // Create animations for our character
         var frontWalkConfig = {
