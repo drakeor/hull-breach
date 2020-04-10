@@ -140,7 +140,7 @@ var createMenu = function (scene, x, y, items, onClick) {
     var menu = scene.rexUI.add.menu({
         x: x,
         y: y,
-
+        bounds: new Phaser.Geom.Rectangle(-1000, -1000, 3000, 3000),
         items: items,
         createButtonCallback: function (item, i) {
             return scene.rexUI.add.label({
