@@ -97,8 +97,12 @@ export default class Demo extends Phaser.Scene
 const config = {
     type: Phaser.AUTO,
     backgroundColor: '#111217',
-    width: 800,
-    height: 600,
+    width: 1024,
+    height: 786,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
     scene: Demo
 };
 
