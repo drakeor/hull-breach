@@ -1,10 +1,16 @@
 import 'phaser';
 import { LEFT } from 'phaser';
 
+// Menu colors
 const COLOR_PRIMARY = 0x4e342e;
 const COLOR_LIGHT = 0x7b5e57;
 const COLOR_DARK = 0x260e04;
 
+// Colors for the drag deadzone
+const dragDeadZone = 15;
+
+// Hacky way of getting the drag mechanic to not interfere with the scroll panel
+var isInScrollPanel = false;
 
 /*var UIScene = new Phaser.Class({
     Extends: Phaser.Scene,
@@ -35,6 +41,7 @@ const COLOR_DARK = 0x260e04;
 
 export default class Demo extends Phaser.Scene
 {
+    initDragPoint = null;
     origDragPoint = null;
     print = null;
 
@@ -86,9 +93,14 @@ export default class Demo extends Phaser.Scene
         const foregroundLayer = map.createDynamicLayer("Foreground", tileset, 0, 0);
 
 
+        // Store info for initial drag clicks
+        this.input.on('pointerdown', function(pointer) {
+            scene.initDragPoint = this.game.input.activePointer.position.clone();
+        }, this);
+
         // Handle clicks for the menu
         this.print = this.add.text(0, 0, '').setScrollFactor(0);
-        this.input.on('pointerdown', function (pointer) {
+        this.input.on('pointerup', function (pointer) {
 
             var worldXY = scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
             console.log('World poisition at Main: ' + pointer.worldX + ',' + pointer.worldY);
@@ -96,15 +108,28 @@ export default class Demo extends Phaser.Scene
 
             //foregroundLayer.getTileAtWorldXY(worldXY.x, worldXY.y)?.setAlpha(0);
 
-            if (menu === undefined) {
-                menu = createMenu(scene, worldXY.x, worldXY.y, items, function (button) {
-                    scene.print.text += 'Click ' + button.text + '\n';
-                });
-                
-            } else if (!menu.isInTouching(worldXY)) {
-                menu.collapse();
-                menu = undefined;
-                scene.print.text = '';
+            // We only want to execute menu interactions if we aren't dragging
+            var dist = 0;
+            console.log("init drag point = " + scene.initDragPoint.x + ',' + scene.initDragPoint.y);
+            if(scene.initDragPoint != null) 
+            {
+                dist = Math.sqrt(Math.pow(scene.initDragPoint.y - pointer.y, 2) + Math.pow(scene.initDragPoint.x - pointer.x, 2));
+            }
+            console.log('drag distance ' + dist);
+
+            // If it's a small drag, we assume it's just error
+            if(dist < dragDeadZone)
+            {
+                if (menu === undefined) {
+                    menu = createMenu(scene, worldXY.x, worldXY.y, items, function (button) {
+                        scene.print.text += 'Click ' + button.text + '\n';
+                    });
+                    
+                } else if (!menu.isInTouching(worldXY)) {
+                    menu.collapse();
+                    menu = undefined;
+                    scene.print.text = '';
+                }
             }
         }, this);
 
@@ -155,17 +180,22 @@ export default class Demo extends Phaser.Scene
     {
         // Support camera dragging
         if (this.input.activePointer.isDown) {
-            if (this.origDragPoint) {
-              // move the camera by the amount the mouse has moved since last update
-              this.cameras.main.scrollX +=
-                this.origDragPoint.x - this.game.input.activePointer.position.x;
-              this.cameras.main.scrollY +=
-                this.origDragPoint.y - this.game.input.activePointer.position.y;
-            } // set new drag origin to current position
+            // move the camera by the amount the mouse has moved since last update
+            if(!isInScrollPanel)
+            {
+                if (this.origDragPoint) {
+                    this.cameras.main.scrollX +=
+                        this.origDragPoint.x - this.game.input.activePointer.position.x;
+                    this.cameras.main.scrollY +=
+                        this.origDragPoint.y - this.game.input.activePointer.position.y;
+                } 
+            }
+            // set new drag origin to current position
             this.origDragPoint = this.game.input.activePointer.position.clone();
-          } else {
+        } else {
             this.origDragPoint = null;
-          }
+        }
+        
     }
 }
 
@@ -224,6 +254,8 @@ var createMenu = function (scene, x, y, items, onClick) {
 // UI Scene
 class UIScene extends Phaser.Scene
 {
+    scrollablePanel : any;
+
     constructor ()
     {
         super('ui');
@@ -274,7 +306,7 @@ class UIScene extends Phaser.Scene
         ];
 
         // Create scrollable panes
-        var scrollablePanel = scene.rexUI.add.scrollablePanel({
+        scene.scrollablePanel = scene.rexUI.add.scrollablePanel({
             x: 0,
             y: 0,
             width: 250,
@@ -316,7 +348,16 @@ class UIScene extends Phaser.Scene
 
     }
 
-    update() {}
+    update() {
+        // Support camera dragging
+        isInScrollPanel = false;
+        if (this.input.activePointer.isDown) {
+            // kill dragging mechanics if we're in the scrollable panel.
+            if (this.scrollablePanel.isInTouching(this.game.input.activePointer.position)) {
+                isInScrollPanel = true;
+            } 
+        }
+    }
 };
 
 
