@@ -52,10 +52,13 @@ export default class Demo extends Phaser.Scene
 
         // UI stuff for the pane
         var data = [
-            { name: 'A' },
-            { name: 'B' },
-            { name: 'C' },
-            { name: 'D' }
+            { name: '0:05 - Walk to Trauma Kit' },
+            { name: '0:10 - Acquire Trauma Kit' },
+            { name: '0:15 - Walk to Patient' },
+            { name: '0:20 - Stabilize Patient' },
+            { name: '0:45 - Walk to Power Station' },
+            { name: '1:45 - Charge Cell' },
+            { name: '2:00 - Finish Charging Cell' }
         ];
 
         // Create tilemap
@@ -95,7 +98,7 @@ export default class Demo extends Phaser.Scene
             width: 400,
             height: 220,
 
-            scrollMode: 1,
+            scrollMode: 0,
 
             background: scene.rexUI.add.roundRectangle(0, 0, 2, 2, 10, COLOR_PRIMARY),
 
@@ -188,7 +191,7 @@ export default class Demo extends Phaser.Scene
 
 var createPanel = function (scene, data) {
     var sizer = scene.rexUI.add.sizer({
-            orientation: 'x',
+            orientation: 'y',
         })
         .add(
             createTable(scene, data, 'actions', 1), // child
@@ -204,17 +207,15 @@ var createPanel = function (scene, data) {
 
 var createTable = function (scene, data, key, rows) {
     var title = scene.rexUI.add.label({
-        orientation: 'x',
+        orientation: 'y',
         text: scene.add.text(0, 0, 'Actions'),
     });
 
     var items = data;
-    var columns = Math.ceil(items.length / rows);
+    
     var table = scene.rexUI.add.gridSizer({
-        column: columns,
-        row: rows,
-
-        rowProportions: 1,
+        column: 1,
+        row: items.length,
     });
 
     var item, r, c;
@@ -258,7 +259,7 @@ var createTable = function (scene, data, key, rows) {
 
 var createIcon = function (scene, item, iconWidth, iconHeight) {
     var label = scene.rexUI.add.label({
-        orientation: 'y',
+        orientation: 'x',
         icon: scene.rexUI.add.roundRectangle(0, 0, iconWidth, iconHeight, 5, COLOR_LIGHT),
         text: scene.add.text(0, 0, item.name),
 
