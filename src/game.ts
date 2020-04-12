@@ -12,33 +12,6 @@ const dragDeadZone = 15;
 // Hacky way of getting the drag mechanic to not interfere with the scroll panel
 var isInScrollPanel = false;
 
-/*var UIScene = new Phaser.Class({
-    Extends: Phaser.Scene,
-
-    initialize: function UIScene()
-    {
-        Phaser.Scene.call(this, { key: 'ui '});
-    },
-
-    create: function()
-    {
-        var text = this.add.text(10, 10).setText('Click to move');
-        text.setShadow(1, 1, '#000000', 2); 
-        var worldCamera = this.scene.get('world').cameras.main;
-
-        this.input.on('pointermove', function (pointer) {
-
-            var pos = worldCamera.getWorldPoint(pointer.x, pointer.y);
-
-            text.setText([
-                'World: ' + pos.x + ' x ' + pos.y,
-                'Camera: ' + worldCamera.midPoint.x + ' x ' + worldCamera.midPoint.y
-            ]);
-
-        });
-    }
-}).*/
-
 export default class Demo extends Phaser.Scene
 {
     initDragPoint = null;
@@ -79,13 +52,12 @@ export default class Demo extends Phaser.Scene
         var menu = undefined;
 
         // UI Stuff for the pop-up menu
-        this.print = this.add.text(0, 580, 'Click to pop-up menu').setScrollFactor(0);
         var items = [
             { name: 'Go Here' },
             { name: 'Acquire Trauma Kit' },
         ]
         
-        // Create tilemap
+        // Create tilemap and tilemap layers
         const map = this.make.tilemap({key: "map"});
         const tileset = map.addTilesetImage("SpaceTiles", "tiles");
 
@@ -103,21 +75,16 @@ export default class Demo extends Phaser.Scene
         this.input.on('pointerup', function (pointer) {
 
             var worldXY = scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
-            console.log('World poisition at Main: ' + pointer.worldX + ',' + pointer.worldY);
-            console.log('World poisition at Sub: ' + worldXY.x + ',' + worldXY.y);
 
-            //foregroundLayer.getTileAtWorldXY(worldXY.x, worldXY.y)?.setAlpha(0);
-
-            // We only want to execute menu interactions if we aren't dragging
+            // Calculate how far we dragged
             var dist = 0;
             console.log("init drag point = " + scene.initDragPoint.x + ',' + scene.initDragPoint.y);
             if(scene.initDragPoint != null) 
             {
                 dist = Math.sqrt(Math.pow(scene.initDragPoint.y - pointer.y, 2) + Math.pow(scene.initDragPoint.x - pointer.x, 2));
             }
-            console.log('drag distance ' + dist);
 
-            // If it's a small drag, we assume it's just error
+            // If it's a large enough drag, we assume the player is panning the camera versus wanting a menu opened
             if(dist < dragDeadZone)
             {
                 if (menu === undefined) {
@@ -200,7 +167,7 @@ export default class Demo extends Phaser.Scene
 }
 
 
-// Code for creating the pop-up menus
+// Code for creating our pop-up menus
 var createMenu = function (scene, x, y, items, onClick) {
     var menu = scene.rexUI.add.menu({
         x: x,
@@ -275,20 +242,6 @@ class UIScene extends Phaser.Scene
 
     create()
     {
-        var text = this.add.text(10, 10, 'Click To Move');
-        text.setShadow(1, 1, '#000000', 2); 
-        var worldCamera = this.scene.get('demo').cameras.main;
-
-        this.input.on('pointermove', function (pointer) {
-
-            var pos = worldCamera.getWorldPoint(pointer.x, pointer.y);
-
-            text.setText([
-                'World: ' + pos.x + ' x ' + pos.y,
-                'Camera: ' + worldCamera.midPoint.x + ' x ' + worldCamera.midPoint.y
-            ]);
-
-        });
 
         var scene: any = this;
         //var scene = this,
@@ -362,7 +315,6 @@ class UIScene extends Phaser.Scene
 
 
 // Code for creating the side-pane
-
 var createPanel = function (scene, data) {
     var sizer = scene.rexUI.add.sizer({
             orientation: 'y',
@@ -379,6 +331,8 @@ var createPanel = function (scene, data) {
     return sizer;
 }
 
+// Creates the side panel elements.
+// TODO: Clean up this code.
 var createTable = function (scene, data, key, rows) {
     var title = scene.rexUI.add.label({
         orientation: 'y',
@@ -431,6 +385,7 @@ var createTable = function (scene, data, key, rows) {
         );
 }
 
+// Creates each "entry" in the table
 var createIcon = function (scene, item, iconWidth, iconHeight) {
     var label = scene.rexUI.add.label({
         orientation: 'x',
@@ -456,7 +411,7 @@ var createIcon = function (scene, item, iconWidth, iconHeight) {
     return label;
 };
 
-
+// Game Configuration
 const config = {
     type: Phaser.AUTO,
     backgroundColor: '#111217',
@@ -470,4 +425,5 @@ const config = {
     scene: [ Demo, UIScene ]
 };
 
+// Create a new game instance
 const game = new Phaser.Game(config);
