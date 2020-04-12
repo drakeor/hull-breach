@@ -5,6 +5,34 @@ const COLOR_PRIMARY = 0x4e342e;
 const COLOR_LIGHT = 0x7b5e57;
 const COLOR_DARK = 0x260e04;
 
+
+/*var UIScene = new Phaser.Class({
+    Extends: Phaser.Scene,
+
+    initialize: function UIScene()
+    {
+        Phaser.Scene.call(this, { key: 'ui '});
+    },
+
+    create: function()
+    {
+        var text = this.add.text(10, 10).setText('Click to move');
+        text.setShadow(1, 1, '#000000', 2); 
+        var worldCamera = this.scene.get('world').cameras.main;
+
+        this.input.on('pointermove', function (pointer) {
+
+            var pos = worldCamera.getWorldPoint(pointer.x, pointer.y);
+
+            text.setText([
+                'World: ' + pos.x + ' x ' + pos.y,
+                'Camera: ' + worldCamera.midPoint.x + ' x ' + worldCamera.midPoint.y
+            ]);
+
+        });
+    }
+}).*/
+
 export default class Demo extends Phaser.Scene
 {
     origDragPoint = null;
@@ -40,27 +68,16 @@ export default class Demo extends Phaser.Scene
 
     create ()
     {
+        var scene: any = this;
+        var menu = undefined;
+
         // UI Stuff for the pop-up menu
         this.print = this.add.text(0, 580, 'Click to pop-up menu').setScrollFactor(0);
         var items = [
             { name: 'Go Here' },
             { name: 'Acquire Trauma Kit' },
         ]
-        var scene: any = this;
-        //var scene = this,
-        var menu = undefined;
-
-        // UI stuff for the pane
-        var data = [
-            { name: '0:05 - Walk to Trauma Kit' },
-            { name: '0:10 - Acquire Trauma Kit' },
-            { name: '0:15 - Walk to Patient' },
-            { name: '0:20 - Stabilize Patient' },
-            { name: '0:45 - Walk to Power Station' },
-            { name: '1:45 - Charge Cell' },
-            { name: '2:00 - Finish Charging Cell' }
-        ];
-
+        
         // Create tilemap
         const map = this.make.tilemap({key: "map"});
         const tileset = map.addTilesetImage("SpaceTiles", "tiles");
@@ -91,42 +108,6 @@ export default class Demo extends Phaser.Scene
             }
         }, this);
 
-        // Create scrollable panes
-        var scrollablePanel = scene.rexUI.add.scrollablePanel({
-            x: 400,
-            y: 300,
-            width: 400,
-            height: 220,
-
-            scrollMode: 0,
-
-            background: scene.rexUI.add.roundRectangle(0, 0, 2, 2, 10, COLOR_PRIMARY),
-
-            panel: {
-                child: createPanel(this, data),
-
-                mask: {
-                    padding: 1
-                },
-            },
-
-            slider: {
-                track: scene.rexUI.add.roundRectangle(0, 0, 20, 10, 10, COLOR_DARK),
-                thumb: scene.rexUI.add.roundRectangle(0, 0, 0, 0, 13, COLOR_LIGHT),
-            },
-      
-            // scroller: true,
-
-            space: {
-                left: 10,
-                right: 10,
-                top: 10,
-                bottom: 10,
-
-                panel: 10,
-            }
-        })
-        .layout()
 
         // Create animations for our character
         var frontWalkConfig = {
@@ -166,7 +147,8 @@ export default class Demo extends Phaser.Scene
         // Add our test player
         this.add.sprite(400, 300, 'android').play('walkBack');
 
-
+        // Add our UI scene last
+        this.scene.launch('ui');
     }
 
     update()
@@ -186,6 +168,157 @@ export default class Demo extends Phaser.Scene
           }
     }
 }
+
+
+// Code for creating the pop-up menus
+var createMenu = function (scene, x, y, items, onClick) {
+    var menu = scene.rexUI.add.menu({
+        x: x,
+        y: y,
+        bounds: new Phaser.Geom.Rectangle(-1000, -1000, 3000, 3000),
+        items: items,
+        createButtonCallback: function (item, i) {
+            return scene.rexUI.add.label({
+                background: scene.rexUI.add.roundRectangle(0, 0, 2, 2, 0, COLOR_PRIMARY),
+                text: scene.add.text(0, 0, item.name, {
+                    fontSize: '20px'
+                }),
+                icon: scene.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_DARK),
+                space: {
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 10,
+                    icon: 10
+                }
+            })
+        },
+
+        easeIn: {
+            duration: 500,
+            orientation: 'y'
+        },
+
+        easeOut: {
+            duration: 100,
+            orientation: 'y'
+        },
+
+        // expandEvent: 'button.over'
+    });
+
+    menu
+        .on('button.over', function (button) {
+            button.getElement('background').setStrokeStyle(1, 0xffffff);
+        })
+        .on('button.out', function (button) {
+            button.getElement('background').setStrokeStyle();
+        })
+        .on('button.click', function (button) {
+            onClick(button);
+        })
+
+    return menu;
+}
+
+// UI Scene
+class UIScene extends Phaser.Scene
+{
+    constructor ()
+    {
+        super('ui');
+    }
+
+    preload() {
+        this.load.setPath('assets');
+
+        // Load our RexUI scene plugin
+        this.load.scenePlugin({
+            key: 'rexuiplugin',
+            url: 'rexuiplugin.min.js',
+            sceneKey: 'rexUI'
+        });
+
+    }
+
+    create()
+    {
+        var text = this.add.text(10, 10, 'Click To Move');
+        text.setShadow(1, 1, '#000000', 2); 
+        var worldCamera = this.scene.get('demo').cameras.main;
+
+        this.input.on('pointermove', function (pointer) {
+
+            var pos = worldCamera.getWorldPoint(pointer.x, pointer.y);
+
+            text.setText([
+                'World: ' + pos.x + ' x ' + pos.y,
+                'Camera: ' + worldCamera.midPoint.x + ' x ' + worldCamera.midPoint.y
+            ]);
+
+        });
+
+        var scene: any = this;
+        //var scene = this,
+        var menu = undefined;
+
+        // UI stuff for the pane
+        var data = [
+            { name: '0:05 - Walk to Trauma Kit' },
+            { name: '0:10 - Acquire Trauma Kit' },
+            { name: '0:15 - Walk to Patient' },
+            { name: '0:20 - Stabilize Patient' },
+            { name: '0:45 - Walk to Power Station' },
+            { name: '1:45 - Charge Cell' },
+            { name: '2:00 - Finish Charging Cell' }
+        ];
+
+        // Create scrollable panes
+        var scrollablePanel = scene.rexUI.add.scrollablePanel({
+            x: 0,
+            y: 0,
+            width: 250,
+            height: 400,
+            anchor: {
+                left: 'right-430',
+                centerY: 'top+200'
+            },
+
+            scrollMode: 0,
+
+            background: scene.rexUI.add.roundRectangle(0, 0, 2, 2, 10, COLOR_PRIMARY),
+
+            panel: {
+                child: createPanel(this, data),
+
+                mask: {
+                    padding: 1
+                },
+            },
+
+            slider: {
+                track: scene.rexUI.add.roundRectangle(0, 0, 20, 10, 10, COLOR_DARK),
+                thumb: scene.rexUI.add.roundRectangle(0, 0, 0, 0, 13, COLOR_LIGHT),
+            },
+      
+            // scroller: true,
+
+            space: {
+                left: 10,
+                right: 10,
+                top: 10,
+                bottom: 10,
+
+                panel: 10,
+            }
+        })
+        .layout()
+
+    }
+
+    update() {}
+};
+
 
 // Code for creating the side-pane
 
@@ -283,67 +416,17 @@ var createIcon = function (scene, item, iconWidth, iconHeight) {
 };
 
 
-// Code for creating the pop-up menus
-var createMenu = function (scene, x, y, items, onClick) {
-    var menu = scene.rexUI.add.menu({
-        x: x,
-        y: y,
-        bounds: new Phaser.Geom.Rectangle(-1000, -1000, 3000, 3000),
-        items: items,
-        createButtonCallback: function (item, i) {
-            return scene.rexUI.add.label({
-                background: scene.rexUI.add.roundRectangle(0, 0, 2, 2, 0, COLOR_PRIMARY),
-                text: scene.add.text(0, 0, item.name, {
-                    fontSize: '20px'
-                }),
-                icon: scene.rexUI.add.roundRectangle(0, 0, 0, 0, 10, COLOR_DARK),
-                space: {
-                    left: 10,
-                    right: 10,
-                    top: 10,
-                    bottom: 10,
-                    icon: 10
-                }
-            })
-        },
-
-        easeIn: {
-            duration: 500,
-            orientation: 'y'
-        },
-
-        easeOut: {
-            duration: 100,
-            orientation: 'y'
-        },
-
-        // expandEvent: 'button.over'
-    });
-
-    menu
-        .on('button.over', function (button) {
-            button.getElement('background').setStrokeStyle(1, 0xffffff);
-        })
-        .on('button.out', function (button) {
-            button.getElement('background').setStrokeStyle();
-        })
-        .on('button.click', function (button) {
-            onClick(button);
-        })
-
-    return menu;
-}
-
 const config = {
     type: Phaser.AUTO,
     backgroundColor: '#111217',
     width: 1024,
     height: 786,
+    pixelArt: true,
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
-    scene: Demo
+    scene: [ Demo, UIScene ]
 };
 
 const game = new Phaser.Game(config);
