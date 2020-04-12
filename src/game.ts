@@ -40,16 +40,24 @@ export default class Demo extends Phaser.Scene
 
     create ()
     {
-        // UI Stuff
+        // UI Stuff for the pop-up menu
         this.print = this.add.text(0, 580, 'Click to pop-up menu').setScrollFactor(0);
         var items = [
             { name: 'Go Here' },
             { name: 'Acquire Trauma Kit' },
         ]
-        var scene = this,
-        menu = undefined;
+        var scene: any = this;
+        //var scene = this,
+        var menu = undefined;
 
-        
+        // UI stuff for the pane
+        var data = [
+            { name: 'A' },
+            { name: 'B' },
+            { name: 'C' },
+            { name: 'D' }
+        ];
+
         // Create tilemap
         const map = this.make.tilemap({key: "map"});
         const tileset = map.addTilesetImage("SpaceTiles", "tiles");
@@ -66,7 +74,7 @@ export default class Demo extends Phaser.Scene
             console.log('World poisition at Main: ' + pointer.worldX + ',' + pointer.worldY);
             console.log('World poisition at Sub: ' + worldXY.x + ',' + worldXY.y);
 
-            foregroundLayer.getTileAtWorldXY(worldXY.x, worldXY.y)?.setAlpha(0);
+            //foregroundLayer.getTileAtWorldXY(worldXY.x, worldXY.y)?.setAlpha(0);
 
             if (menu === undefined) {
                 menu = createMenu(scene, worldXY.x, worldXY.y, items, function (button) {
@@ -79,6 +87,43 @@ export default class Demo extends Phaser.Scene
                 scene.print.text = '';
             }
         }, this);
+
+        // Create scrollable panes
+        var scrollablePanel = scene.rexUI.add.scrollablePanel({
+            x: 400,
+            y: 300,
+            width: 400,
+            height: 220,
+
+            scrollMode: 1,
+
+            background: scene.rexUI.add.roundRectangle(0, 0, 2, 2, 10, COLOR_PRIMARY),
+
+            panel: {
+                child: createPanel(this, data),
+
+                mask: {
+                    padding: 1
+                },
+            },
+
+            slider: {
+                track: scene.rexUI.add.roundRectangle(0, 0, 20, 10, 10, COLOR_DARK),
+                thumb: scene.rexUI.add.roundRectangle(0, 0, 0, 0, 13, COLOR_LIGHT),
+            },
+      
+            // scroller: true,
+
+            space: {
+                left: 10,
+                right: 10,
+                top: 10,
+                bottom: 10,
+
+                panel: 10,
+            }
+        })
+        .layout()
 
         // Create animations for our character
         var frontWalkConfig = {
@@ -139,7 +184,105 @@ export default class Demo extends Phaser.Scene
     }
 }
 
+// Code for creating the side-pane
 
+var createPanel = function (scene, data) {
+    var sizer = scene.rexUI.add.sizer({
+            orientation: 'x',
+        })
+        .add(
+            createTable(scene, data, 'actions', 1), // child
+            0, // proportion
+            'top', // align
+            {
+                right: 8,
+            }, // paddingConfig
+            true // expand
+        )
+    return sizer;
+}
+
+var createTable = function (scene, data, key, rows) {
+    var title = scene.rexUI.add.label({
+        orientation: 'x',
+        text: scene.add.text(0, 0, 'Actions'),
+    });
+
+    var items = data;
+    var columns = Math.ceil(items.length / rows);
+    var table = scene.rexUI.add.gridSizer({
+        column: columns,
+        row: rows,
+
+        rowProportions: 1,
+    });
+
+    var item, r, c;
+    var iconSize = (rows === 1) ? 80 : 40;
+    for (var i = 0, cnt = items.length; i < cnt; i++) {
+        item = items[i];
+        r = i % rows;
+        c = (i - r) / rows;
+        item.category = key;
+        table.add(
+            createIcon(scene, item, iconSize, iconSize),
+            c,
+            r,
+            'top',
+            2,
+            true
+        );
+        delete item.category;
+    }
+
+    return scene.rexUI.add.sizer({
+            orientation: 'y',
+        })
+        .addBackground(
+            scene.rexUI.add.roundRectangle(0, 0, 0, 0, 0, undefined).setStrokeStyle(2, COLOR_LIGHT, 1)
+        )
+        .add(
+            title, // child
+            0, // proportion
+            'left', // align
+            5, // paddingConfig
+            true // expand
+        )
+        .add(table, // child
+            1, // proportion
+            'center', // align
+            5, // paddingConfig
+            true // expand
+        );
+}
+
+var createIcon = function (scene, item, iconWidth, iconHeight) {
+    var label = scene.rexUI.add.label({
+        orientation: 'y',
+        icon: scene.rexUI.add.roundRectangle(0, 0, iconWidth, iconHeight, 5, COLOR_LIGHT),
+        text: scene.add.text(0, 0, item.name),
+
+        space: {
+            icon: 10,
+        }
+    });
+
+    let category = item.category;
+    let name = item.name;
+    label.getElement('icon')
+        .setInteractive()
+        .on('pointerdown', function () {
+            if (!scene.rexUI.getTopmostSizer(this).isInTouching()) {
+                return;
+            }
+            scene.print.text += `${category}:${name}\n`;
+        });
+
+    return label;
+};
+
+
+// Code for creating the pop-up menus
 var createMenu = function (scene, x, y, items, onClick) {
     var menu = scene.rexUI.add.menu({
         x: x,
